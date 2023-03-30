@@ -45,7 +45,8 @@ class Facebook:
     def get_home(self, link):
         response = self.make_request(self.head.format("/home.php"))
         html = self.parsing(response.text)
-        for page in html.find_all("div", class_ = "dj dl em"):
+        myclass = re.search(r'<\w+\s+class=\"([^\"]+)\" data-ft', str(html))[1]
+        for page in html.find_all("div", attrs={"class": myclass}):
             user = page.find("strong").find("a").text
             try:
                 tanggapi = self.reaction_picker(self.head.format(page.find("a", string="Tanggapi")["href"]))
@@ -55,7 +56,7 @@ class Facebook:
                     comment = comment
                 else:
                     comment = self.head.format(comment)
-                time.sleep(3)
+                time.sleep(5)
                 react = self.make_request(tanggapi)
                 get_comment = self.get_comment(comment)[0]
                 fb_dtsg = self.get_comment(comment)[1]
