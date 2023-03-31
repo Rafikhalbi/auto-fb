@@ -12,6 +12,14 @@ class Facebook:
         
     def make_request(self, url):
         with requests.Session() as ses:
+            language = ses.get(self.head.format("/language.php"), headers={"cookie": self.cookies})
+            html = self.parsing(language.text)
+            for link_language in html.find_all("form", method="post"):
+                if "Indonesia" in str(link_language):
+                    sl = self.head.format(link_language["action"])
+                    fb_dtsg = link_language.find("input", attrs={"name": "fb_dtsg"})["value"]
+                    jazoest = link_language.find("input", attrs={"name": "jazoest"})["value"]
+            s = ses.post(sl, headers={"cookie": self.cookies}, data={"fb_dtsg": fb_dtsg, "jazoest": jazoest})
             response = ses.get(url, headers={"cookie": self.cookies})
             return response
     
@@ -37,9 +45,11 @@ class Facebook:
     def get_comment(self, url):
         response = self.make_request(url)
         html = self.parsing(response.text)
-        comment_link = self.head.format(html.find("form", {"method": "post"})["action"])
-        fb_dtsg = html.find("input", {"type": "hidden", "name": "fb_dtsg"})["value"]
-        jazoest = html.find("input", {"type": "hidden", "name": "jazoest"})["value"]
+        try:
+            comment_link = self.head.format(html.find("form", {"method": "post"})["action"])
+            fb_dtsg = html.find("input", {"type": "hidden", "name": "fb_dtsg"})["value"]
+            jazoest = html.find("input", {"type": "hidden", "name": "jazoest"})["value"]
+        except: pass
         return comment_link, fb_dtsg, jazoest
 
     def get_home(self, link):
@@ -68,7 +78,7 @@ class Facebook:
                 }
                 post = requests.post(get_comment, headers={"cookie": self.cookies}, data=data)
                 if react.status_code or post.status_code == 200:
-                    print(f"name: {user}\nreaction: True | {react.status_code}\ncomment: True | {post.status_code}\ntext: Hello {user}👋\n")
+                    print(f"name: {user}\nreaction: True | {react.status_code}\ncomment: True | {post.status_code}\ntext: Hello {user}👋\n", end="\r")
                 else:
                     print(f"name: {user}\nreaction | {react.status_code}\ncomment: | {post.status_code}\n")
             except Exception as e:
@@ -78,14 +88,13 @@ class Facebook:
             self.get_home(link.format(lbl))
         else:
             self.get_home(self.head.format(""))
-            
-      
+                
 if __name__ == "__main__":
     cookies = open("cookies.txt", "r").read()
     head = "https://mbasic.facebook.com{}"
     try:
         fb = Facebook(cookies, head)
         fb.information_account()
-    except:
+    except Exception as e:
         exit("Please Login Cookies Before Use Script...")
     fb.get_home(head)
